@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""
+Linux Network Monitoring Script
+Author: Your Name
+Description:
+    - Monitors network connectivity and bandwidth usage on a Linux system.
+    - Pings a target host to check reachability.
+    - Reads bandwidth stats from /proc/net/dev.
+    - Logs results with timestamps into a log file.
+    - Generates alerts for downtime or high bandwidth usage.
+
+Usage:
+    python3 network_monitor.py
+"""
+
+import os
+import time
+import subprocess
+from datetime import datetime
+
+# -------------------------------
+# Configuration
+# -------------------------------
+HOST = "8.8.8.8"           # Host to monitor (Google DNS by default)
+INTERFACE = "eth0"          # Network interface (check with `ip a`)
+LOG_FILE = "network_log.txt"
+CHECK_INTERVAL = 5          # Seconds between checks
+BANDWIDTH_THRESHOLD = 5e6   # 5 MB/s threshold for alerts
+
+
+# -------------------------------
+# Helper Functions
+# -------------------------------
+def log_message(message: str):
+    """Log messages with timestamps into a file and print them."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry = f"{timestamp} - {message}"
+    with open(LOG_FILE, "a") as f:
+        f.write(entry + "\n")
+    print(entry)
+
+
+def check_ping(host: str) -> bool:
+    """Ping a host and return True if reachable, False otherwise."""
+    try:
+        subprocess.check_output(
+            ["ping", "-c", "2", host], stderr=subprocess.STDOUT
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def check_bandwidth(interface: str):
+    """
+    Parse /proc/net/dev to get received and transmitted bytes
+    for a given network interface.
+    """
+    try:
+        with open("/proc/net/dev") as f:
+            for line in f:
+                if interface in line:
+                    data = line.split()
+                    rx_bytes = int(data[1])   # Received bytes
+                    tx_bytes = int(data[9])   # Transmitted bytes
+                    return rx_bytes, tx_bytes
+    except FileNotFoundError:
+        log_message("Error: /proc/net/dev not found. Are you on Linux?")
+    return None, None
+
+
+# -------------------------------
+# Monitoring Loop
+# -------------------------------
+def monitor():
+    log_message("🚀 Starting network monitoring...")
+    prev_rx, prev_tx = check_bandwidth(INTERFACE) or (0, 0)
+
+    while True:
+        # 1. Connectivity check
+        if check_ping(HOST):
+            log_message(f"✅ Host {HOST} is reachable")
+        else:
+            log_message(f"🚨 ALERT: Host {HOST} is DOWN!")
+
+        # 2. Bandwidth check
+        rx, tx = check_bandwidth(INTERFACE)
+        if rx is not None and tx is not None:
+            rx_speed = (rx - prev_rx) / CHECK_INTERVAL  # Bytes/sec
+            tx_speed = (tx - prev_tx) / CHECK_INTERVAL
+
+            log_message(
+                f"📊 Bandwidth: RX={rx_speed/1024:.2f} KB/s | TX={tx_speed/1024:.2f} KB/s"
+            )
+
+            prev_rx, prev_tx = rx, tx
+
+            if rx_speed > BANDWIDTH_THRESHOLD or tx_speed > BANDWIDTH_THRESHOLD:
+                log_message("🚨 ALERT: High bandwidth usage detected!")
+
+        # 3. Wait before next check
+        time.sleep(CHECK_INTERVAL)
+
+
+# -------------------------------
+# Main Entry Point
+# -------------------------------
+if __name__ == "__main__":
+    try:
+        monitor()
+    except KeyboardInterrupt:
+        log_message("🛑 Monitoring stopped by user.")
