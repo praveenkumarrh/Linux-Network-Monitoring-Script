@@ -1,0 +1,11 @@
+Host 8.8.8.8 is reachable 
+Bandwidth: RX=12.50 KB/s | TX=3.20 KB/s
+ALERT 🚨 High bandwidth usage detected!
+
+
+
+2025-09-19 19:10:01 - Starting network monitoring...
+2025-09-19 19:10:01 - Host 8.8.8.8 is reachable 
+2025-09-19 19:10:01 - Bandwidth: RX=12.50 KB/s | TX=3.20 KB/s
+2025-09-19 19:10:16 - ALERT 🚨 High bandwidth usage detected!
+2025-09-19 19:10:21 - ALERT 🚨 Host 8.8.8.8 is DOWN!
