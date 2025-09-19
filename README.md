@@ -1,4 +1,4 @@
-# Linux-Network-Monitoring-Script
+# Linux-Network-Monitoring-Script project
 A lightweight Python-based tool to monitor network connectivity and bandwidth usage on Linux systems.
 # Linux Network Monitoring Script
 
